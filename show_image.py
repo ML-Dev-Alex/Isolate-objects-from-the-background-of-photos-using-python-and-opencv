@@ -28,7 +28,7 @@ def ResizeWithAspectRatio(image, width=None, height=None, inter=cv2.INTER_AREA):
     return cv2.resize(image, dim, interpolation=inter)
 
 
-def show_image(img, title='image', image_name='image', save=True, directory='output'):
+def show_image(img, title='image', image_name='image', save=True, directory='output', display=True):
     """
     Displays an image on screen and saves it on the hard-drive if desired.
     :param img: List of cv2 images to display and save.
@@ -41,55 +41,56 @@ def show_image(img, title='image', image_name='image', save=True, directory='out
     # Get screen resolution.
     screen_width, screen_height = pyautogui.size()
 
-    # Create output folders if they do not exist.
-    if not os.path.isdir(directory):
-        os.mkdir(directory)
-    if not os.path.isdir(f'{directory}/{image_name}'):
-        os.mkdir(f'{directory}/{image_name}')
+    if save:
+        # Create output folders if they do not exist.
+        if not os.path.isdir(directory):
+            os.mkdir(directory)
+        if not os.path.isdir(f'{directory}/{image_name}'):
+            os.mkdir(f'{directory}/{image_name}')
 
-    # Initialize display window
-    window_name = f'{title}'
-    cv2.namedWindow(window_name)
+    
+    if display:
+        # Initialize display window
+        window_name = f'{title}'
+        cv2.namedWindow(window_name)
 
-    # Resize if image is too big.
-    resized = False
-    (h, w) = img.shape[:2]
-    # If too wide, resize with respect to width.
-    if (w > screen_width/3):
-        resized = True
-        resized_img = ResizeWithAspectRatio(img, width=int(screen_width/2))
-        (resized_h, resized_w) = resized_img.shape[:2]
-        # Center window.
-        cv2.moveWindow(window_name, int(screen_width/2-70), int(screen_height/2 - resized_h))
-        # cv2.moveWindow(window_name, int(screen_width/2 -
-        #                 resized_w/2), int(screen_height/2 - resized_h/2))
-    # If too tall, resize with respect to height.
-    elif(h > screen_height/3):
-        resized = True
-        resized_img = ResizeWithAspectRatio(img, height=int(screen_height/2))
-        (resized_h, resized_w) = resized_img.shape[:2]
-        # Center window.
-        cv2.moveWindow(window_name, int(screen_width/2 -
-                        resized_w/2), int(screen_height/2 - resized_h/2))
-    # Otherwise display original image.
-    else:
-        # Center window.
-        cv2.moveWindow(window_name, int(screen_width/2 -
-                        w/2), int(screen_height/2 - h/2))
+        # Resize if image is too big.
+        resized = False
+        (h, w) = img.shape[:2]
+        # If too wide, resize with respect to width.
+        if (w > screen_width/3):
+            resized = True
+            resized_img = ResizeWithAspectRatio(img, width=int(screen_width/2))
+            (resized_h, resized_w) = resized_img.shape[:2]
+            # Center window.
+            cv2.moveWindow(window_name, int(screen_width/2 -
+                            resized_w/2), int(screen_height/2 - resized_h/2))
+        # If too tall, resize with respect to height.
+        elif(h > screen_height/3):
+            resized = True
+            resized_img = ResizeWithAspectRatio(img, height=int(screen_height/2))
+            (resized_h, resized_w) = resized_img.shape[:2]
+            # Center window.
+            cv2.moveWindow(window_name, int(screen_width/2 -
+                            resized_w/2), int(screen_height/2 - resized_h/2))
+        # Otherwise display original image.
+        else:
+            # Center window.
+            cv2.moveWindow(window_name, int(screen_width/2 -
+                            w/2), int(screen_height/2 - h/2))   
+    
+        # And finaly display it on screen.
+        if resized:
+            cv2.imshow(f'{title}', resized_img)
+        else:
+            cv2.imshow(f'{title}', img)
 
-        
-
+        # Wait for input before closing image and moving on.
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
     # Save image on destination folder.
     if save:
         cv2.imwrite(f'{directory}/{image_name}/{title}.jpg', img)
 
-    # And finaly display it on screen.
-    if resized:
-        cv2.imshow(f'{title}', resized_img)
-    else:
-        cv2.imshow(f'{title}', img)
-
-    # Wait for input before closing image and moving on.
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    
