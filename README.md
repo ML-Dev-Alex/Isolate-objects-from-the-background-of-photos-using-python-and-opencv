@@ -14,7 +14,9 @@ Isolate objects from the background of photos using python and opencv.
 <hr>
 
 How to use: Put a folder called card-pairs in the same folder as this solution.
+
   <img width="400" src="same_folder.png">
 
-Use the proper naming conventions:
+Use the proper naming conventions:\n
+
   <img width="400" src="naming_conventions.png">
