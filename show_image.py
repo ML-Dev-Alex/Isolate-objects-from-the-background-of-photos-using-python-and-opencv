@@ -58,7 +58,7 @@ def show_image(img, title='image', image_name='image', save=True, directory='out
         resized = False
         (h, w) = img.shape[:2]
         # If too wide, resize with respect to width.
-        if (w > screen_width/3):
+        if (w > screen_width/2):
             resized = True
             resized_img = ResizeWithAspectRatio(img, width=int(screen_width/2))
             (resized_h, resized_w) = resized_img.shape[:2]
