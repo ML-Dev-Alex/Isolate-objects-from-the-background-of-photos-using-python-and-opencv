@@ -20,3 +20,6 @@ How to use: Put a folder called card-pairs in the same folder as this solution.
 Use the proper naming conventions:
 
   <img width="400" src="naming_conventions.png">
+  
+  
+Run crop_and_grade.py
