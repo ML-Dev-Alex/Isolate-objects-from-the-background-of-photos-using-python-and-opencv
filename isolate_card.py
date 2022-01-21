@@ -8,7 +8,7 @@ from midpoint import midpoint
 from crop_rectangle import crop_rectangle
 
 
-def isolate_card(image_number=1, image_name="Card", image_type="front", save=False, display=False, folder='card-pairs', format='png'):
+def isolate_card(image_number=1, image_name="Card", image_type="front", save=False, display=False, input_folder='card-pairs', format='png', output_folder='output'):
     """
     Isolates a card from it's background.
     :param image_number: The number of the image to be isolated.
@@ -20,7 +20,7 @@ def isolate_card(image_number=1, image_name="Card", image_type="front", save=Fal
     processing_counter = 0
 
     # Open image.
-    img = cv2.imread(f'./{folder}/{image_number}/{image_type}.{format}')
+    img = cv2.imread(f'./{input_folder}/{image_number}/{image_type}.{format}')
 
     # Check if image is vertical or horizontal, rotate it, and resize to default size mainainting aspect ratio.
     (h, w) = img.shape[:2]
@@ -30,11 +30,10 @@ def isolate_card(image_number=1, image_name="Card", image_type="front", save=Fal
     img = ResizeWithAspectRatio(img, width=1920)
 
     show_image(img, f'{processing_counter}_{image_name}',
-               image_name, save=save, display=display)
+               image_name, save=save, display=display, folder=output_folder)
     processing_counter += 1
 
     # We begin by pre-processing the image before we try to find the card's contour.
-
     # Turn it into grayscale and controll the contrast. We don't need color information to find edges
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # Contrast+brightness tuning might be important to make some types of images pop, but that's not the case for this one, leave at the default values.
@@ -42,13 +41,13 @@ def isolate_card(image_number=1, image_name="Card", image_type="front", save=Fal
     beta = 0  # Brightness control (0-100)
     contrast = cv2.convertScaleAbs(gray, alpha=alpha, beta=beta)
     show_image(
-        contrast, f'{processing_counter}_contrast', image_name, save=save, display=display)
+        contrast, f'{processing_counter}_contrast', image_name, save=save, display=display, folder=output_folder)
     processing_counter += 1
 
     # Blur the image. This lowers the complexity of the image and facilitates edge detecting.
     blur = cv2.bilateralFilter(contrast, 9, 150, 150)
     show_image(blur, f'{processing_counter}_blur',
-               image_name, save=save, display=display)
+               image_name, save=save, display=display, folder=output_folder)
     processing_counter += 1
 
 
@@ -71,7 +70,7 @@ def isolate_card(image_number=1, image_name="Card", image_type="front", save=Fal
     # Use the canny algorithm to find edges.
     canny = auto_canny(thresh)
     show_image(canny, f'{processing_counter}_canny',
-               image_name, save=save, display=display)
+               image_name, save=save, display=display, folder=output_folder)
     processing_counter += 1
 
     # Create a vertical line kernel and dilate edges to increase the chance we'll be able to get the full contourn later.
@@ -82,7 +81,7 @@ def isolate_card(image_number=1, image_name="Card", image_type="front", save=Fal
                         [0, 0, 1, 0, 0]]), dtype=np.uint8)
     edged = cv2.dilate(canny, kernel, iterations=2)
     show_image(
-        edged, f'{processing_counter}_dilated_vertical', image_name, save=save, display=display)
+        edged, f'{processing_counter}_dilated_vertical', image_name, save=save, display=display, folder=output_folder)
     processing_counter += 1
 
     # Do the same with a horizontal line kernel.
@@ -93,14 +92,14 @@ def isolate_card(image_number=1, image_name="Card", image_type="front", save=Fal
                         [0, 0, 0, 0, 0]]), dtype=np.uint8)
     edged = cv2.dilate(edged, kernel, iterations=2)
     show_image(
-        edged, f'{processing_counter}_dilated_horizontal', image_name, save=save, display=display)
+        edged, f'{processing_counter}_dilated_horizontal', image_name, save=save, display=display, folder=output_folder)
     processing_counter += 1
 
     # One more morphological transformation to close/fill holes on the edges, this time a full closed kernel.
     kernel = np.ones((9, 9), np.uint8)
     closed = cv2.morphologyEx(edged, cv2.MORPH_CLOSE, kernel, iterations=1)
     show_image(closed, f'{processing_counter}_closed',
-               image_name, save=save, display=display)
+               image_name, save=save, display=display, folder=output_folder)
     processing_counter += 1
 
     # Now we can start process of finding the contour
@@ -128,7 +127,7 @@ def isolate_card(image_number=1, image_name="Card", image_type="front", save=Fal
         contours_image = cv2.drawContours(
             img.copy(), biggestContours, -1, (255, 0, 0), 10)
         show_image(
-            contours_image, f'{processing_counter}_biggest_contours_image', image_name, save=save, display=display)
+            contours_image, f'{processing_counter}_biggest_contours_image', image_name, save=save, display=display, folder=output_folder)
         processing_counter += 1
 
         # Calculate hull points for each of the biggest contours and display them. (This tries to close the countours)
@@ -138,7 +137,7 @@ def isolate_card(image_number=1, image_name="Card", image_type="front", save=Fal
             hull_image = cv2.drawContours(img.copy(), hull, -1, (0, 0, 0), -1)
         
         show_image(
-            hull_image, f'{processing_counter}_convex_hull_contours_image', image_name, save=save, display=display)
+            hull_image, f'{processing_counter}_convex_hull_contours_image', image_name, save=save, display=display, folder=output_folder)
         processing_counter += 1
 
 
@@ -147,7 +146,7 @@ def isolate_card(image_number=1, image_name="Card", image_type="front", save=Fal
         contours_image = cv2.drawContours(
             img.copy(), biggestContour, -1, (0, 0, 255), 20)
         show_image(
-            contours_image, f'{processing_counter}_biggest_contour_image', image_name, save=save, display=display)
+            contours_image, f'{processing_counter}_biggest_contour_image', image_name, save=save, display=display, folder=output_folder)
         processing_counter += 1
 
         # Try another approximation for the bounding box. (Not worth using, our solution works better).
@@ -156,7 +155,7 @@ def isolate_card(image_number=1, image_name="Card", image_type="front", save=Fal
         contours_image = cv2.drawContours(
             img.copy(), approx, -1, (0, 255, 0), 10)
         show_image(
-            contours_image, f'{processing_counter}_approximate_box_contours_image', image_name, save=save, display=display)
+            contours_image, f'{processing_counter}_approximate_box_contours_image', image_name, save=save, display=display, folder=output_folder)
         processing_counter += 1
     else:
         print(
@@ -203,7 +202,7 @@ def isolate_card(image_number=1, image_name="Card", image_type="front", save=Fal
     cv2.line(closed, (int(tlblX), int(tlblY)), (int(trbrX), int(trbrY)),
              (255, 0, 255), 2)
     show_image(
-        closed, f'{processing_counter}_boxes', image_name, save=save, display=display)
+        closed, f'{processing_counter}_boxes', image_name, save=save, display=display, folder=output_folder)
     processing_counter += 1
 
     # Crop only the card out of the original image, and display/save the transformed versions of it.
@@ -215,7 +214,7 @@ def isolate_card(image_number=1, image_name="Card", image_type="front", save=Fal
         # by 90 degrees clockwise
         card = cv2.rotate(card, cv2.cv2.ROTATE_90_CLOCKWISE)
     show_image(card, f'{processing_counter}_card',
-               image_name, save=save, display=display)
+               image_name, save=save, display=display, folder=output_folder)
     processing_counter += 1
 
     # Return the cropped card without the background.
@@ -229,114 +228,118 @@ if __name__ == "__main__":
 
     image_number = 1
     image_type = "front"
+    output_folder = 'output'
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
     image_type = "back"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
+    
+
+
     image_number = 2
     image_type = "front"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
     image_type = "back"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
     image_number = 3
     image_type = "front"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
     image_type = "back"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
     image_number = 4
     image_type = "front"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
     image_type = "back"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
     image_number = 5
     image_type = "front"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
     image_type = "back"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
     image_number = 6
     image_type = "front"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
     image_type = "back"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
     image_number = 7
     image_type = "front"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
     image_type = "back"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
     image_number = 1
     image_type = "front"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
     image_type = "back"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display)
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder)
 
     image_number = 0
     folder = 'tests'
 
     image_type = "test_1"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=folder, format='jpg')
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder,  format='jpg')
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=folder, format='png')
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder,  format='png')
 
     image_type = "test_2"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=folder, format='jpg')
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder,  format='jpg')
 
     image_type = "test_3"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=folder, format='jpg')
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder,  format='jpg')
 
     image_type = "test_4"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=folder, format='jpg')
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder,  format='jpg')
 
     image_type = "test_5"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=folder, format='jpg')
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder,  format='jpg')
 
     image_type = "test_6"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=folder, format='jpg')
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder,  format='jpg')
 
     image_type = "test_7"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=folder, format='jpg')
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder,  format='jpg')
 
     image_type = "test_8"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=folder, format='jpg')
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder,  format='jpg')
 
     image_type = "test_9"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=folder, format='jpg')
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder,  format='jpg')
 
     image_type = "test_10"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=folder, format='jpg')
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder,  format='jpg')
 
     image_type = "test_11"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=folder, format='jpg')
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder,  format='jpg')
 
     image_type = "test_12"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=folder, format='jpg')
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder,  format='jpg')
 
     image_type = "test_13"
     card_image = isolate_card(image_number=image_number, image_type=image_type,
-                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=folder, format='jpg')
+                              image_name=f"card_{image_number}_{image_type}", save=save, display=display, folder=output_folder,  format='jpg')

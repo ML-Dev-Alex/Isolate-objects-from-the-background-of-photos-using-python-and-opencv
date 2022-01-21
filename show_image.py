@@ -28,14 +28,14 @@ def ResizeWithAspectRatio(image, width=None, height=None, inter=cv2.INTER_AREA):
     return cv2.resize(image, dim, interpolation=inter)
 
 
-def show_image(img, title='image', image_name='image', save=True, directory='output', display=True):
+def show_image(img, title='image', image_name='image', save=True, folder='output', display=True):
     """
     Displays an image on screen and saves it on the hard-drive if desired.
     :param img: List of cv2 images to display and save.
     :param title: Image title, generally a description of what kind of transformation was applied to the image.
     :param image_name: Name of the current image being displayed, a new folder will be created for the image name supplied.
     :param save: If True, saves image on harddrive.
-    :param directory: Output directory to save image in.
+    :param folder: Output folder to save image in.
     """
 
     # Get screen resolution.
@@ -43,10 +43,10 @@ def show_image(img, title='image', image_name='image', save=True, directory='out
 
     if save:
         # Create output folders if they do not exist.
-        if not os.path.isdir(directory):
-            os.mkdir(directory)
-        if not os.path.isdir(f'{directory}/{image_name}'):
-            os.mkdir(f'{directory}/{image_name}')
+        if not os.path.isdir(folder):
+            os.mkdir(folder)
+        if not os.path.isdir(f'{folder}/{image_name}'):
+            os.mkdir(f'{folder}/{image_name}')
 
     
     if display:
@@ -91,6 +91,6 @@ def show_image(img, title='image', image_name='image', save=True, directory='out
 
     # Save image on destination folder.
     if save:
-        cv2.imwrite(f'{directory}/{image_name}/{title}.jpg', img)
+        cv2.imwrite(f'{folder}/{image_name}/{title}.jpg', img)
 
     

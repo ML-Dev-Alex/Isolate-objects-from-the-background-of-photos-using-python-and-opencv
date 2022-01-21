@@ -5,14 +5,12 @@ from show_image import show_image
 from skimage.metrics import structural_similarity
 
 
-def check_similarity(card, reference, name="Card", save=False, display=False, folder='grading_output'):
+def check_similarity(card, reference, name="Card", save=False, display=False, output_folder='output/grading'):
     MAX_FEATURES = 500
-    print(name)    
     height, width, _ = reference.shape
     resized_card = cv2.resize(card.copy(), (width, height))
 
-    show_image(resized_card, name, "Original", save, folder, display)
-    show_image(reference, name, "Reference", save, folder, display)
+    show_image(reference, "Reference", name, save, output_folder, display)
 
     gray_card = cv2.cvtColor(resized_card, cv2.COLOR_BGR2GRAY)
     gray_reference = cv2.cvtColor(reference, cv2.COLOR_BGR2GRAY)
@@ -31,14 +29,14 @@ def check_similarity(card, reference, name="Card", save=False, display=False, fo
     matches = sorted(matches, key=lambda x: x.distance)
 
     # Remove bad matches.
-    similar_regions = [i for i in matches if i.distance < 30]
+    similar_regions = [i for i in matches if i.distance < 50]
     print(f"Orb Score: {len(similar_regions)/len(matches)}.")
     matches = similar_regions
 
     # Draw best matches.
     matches_image = cv2.drawMatches(
         resized_card.copy(), keypoints1, reference.copy(), keypoints2, matches, None)
-    show_image(matches_image, name, "Matches", save, folder, display)
+    show_image(matches_image, "Matches", name, save, output_folder, display)
 
     # Extract location of good matches
     points1 = np.zeros((len(matches), 2), dtype=np.float32)
@@ -51,20 +49,22 @@ def check_similarity(card, reference, name="Card", save=False, display=False, fo
     # Find homography
     homography, _ = cv2.findHomography(points1, points2, cv2.RANSAC)
     # Use homography
-    warped_card = cv2.warpPerspective(resized_card, homography, (width, height))
-    show_image(warped_card, name, "Warped Card", save, folder, display)
+    warped_card = cv2.warpPerspective(
+        resized_card, homography, (width, height))
+    show_image(warped_card, "Warped Card", name, save, output_folder, display)
 
-    gray_card = cv2.cvtColor(warped_card, cv2.COLOR_BGR2GRAY)   
-    
+    gray_card = cv2.cvtColor(warped_card, cv2.COLOR_BGR2GRAY)
+
     # Compute the Structural Similarity Index (SSIM), ensuring that the difference is returned
-    (score, diff) = structural_similarity(gray_card, gray_reference, full=True, gaussian_weights=True)
+    (score, diff) = structural_similarity(gray_card,
+                                          gray_reference, full=True, gaussian_weights=True)
     diff = (diff * 255).astype("uint8")
-    show_image(diff, name, "Difference", save, folder, display)
+    show_image(diff, "Difference", name, save, output_folder, display)
     print(f"SSIM: {score:.4f}.\n")
 
     thresh = cv2.threshold(
         diff, 0, 128, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
-    show_image(thresh, name, "Thresh", save, folder, display)
+    show_image(thresh, "Thresh", name, save, output_folder, display)
     cnts = cv2.findContours(
         thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnts = imutils.grab_contours(cnts)
@@ -77,7 +77,11 @@ def check_similarity(card, reference, name="Card", save=False, display=False, fo
             continue
         number_of_diferences += 1
         cv2.rectangle(card, (x, y), (x + w, y + h), (0, 0, 255), 2)
-    show_image(card, name, "Damage", save, folder, display)
+    show_image(card, "Damage", name, save, output_folder, display)
+
+    with open(f'{output_folder}/{name}/Grading.txt', 'w') as f:
+        f.write(
+            f'{name}:\nSSIM: {score:.4f}\nOrb score: {len(similar_regions)/len(matches)}.')
 
 
 if __name__ == "__main__":
